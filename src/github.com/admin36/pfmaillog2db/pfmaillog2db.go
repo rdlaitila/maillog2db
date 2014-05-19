@@ -71,7 +71,7 @@ type Pfmaillog2dbClient struct {
     RowUpdatedAt time.Time
 }
 type Pfmaillog2dbMessage struct {
-    Id int64   
+    Id int64
     MessageTimestamp time.Time
     MessageMailhost string `sql:"type:varchar(255);"`
     MessageQueueid string `sql:"type:varchar(11);"`
@@ -108,7 +108,7 @@ var ERROR error
 /*
 * Main Method
 */
-func main() {    
+func main() {
     cwd, _ := os.Getwd()
 
     //Setup Command Line Flags
@@ -118,13 +118,13 @@ func main() {
     flag_dbport := flag.Int("dbport", 3306, "Database Port")
     flag_dbuser := flag.String("dbuser", "username", "Database Username")
     flag_dbpass := flag.String("dbpass", "password", "Database Password")
-    flag_dbname := flag.String("dbname", "databasename", "Database Name")    
-    flag_debug := flag.Bool("debug", false, "Debug Output. Default: false")    
+    flag_dbname := flag.String("dbname", "databasename", "Database Name")
+    flag_debug := flag.Bool("debug", false, "Debug Output. Default: false")
     flag.Parse()
 
     //Setup Config
-    config := Config{*flag_maillog, *flag_logfile, *flag_dbhost, *flag_dbport, *flag_dbuser, *flag_dbpass, *flag_dbname, *flag_debug}        
-    
+    config := Config{*flag_maillog, *flag_logfile, *flag_dbhost, *flag_dbport, *flag_dbuser, *flag_dbpass, *flag_dbname, *flag_debug}
+
     //Setup Program Log
     logfile, err := os.OpenFile(config.logfile, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
     if err !=nil {
@@ -137,9 +137,9 @@ func main() {
     }
     defer logfile.Close()
 
-    //Setup DB    
+    //Setup DB
     dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?parseTime=True", config.dbuser, config.dbpass, config.dbhost, config.dbport, config.dbname)
-    DBCONN, ERROR = gorm.Open("mysql", dsn)        
+    DBCONN, ERROR = gorm.Open("mysql", dsn)
     if ERROR != nil {
         log.Fatal(ERROR)
     }
@@ -156,36 +156,36 @@ func main() {
             log.Println("Database Connection Successful")
         }
     }
-    
+
     //ensure db tables exist:
     DBCONN.AutoMigrate(Pfmaillog2dbLog{})
     DBCONN.AutoMigrate(Pfmaillog2dbClient{})
-    DBCONN.AutoMigrate(Pfmaillog2dbMessage{})    
+    DBCONN.AutoMigrate(Pfmaillog2dbMessage{})
     DBCONN.AutoMigrate(Pfmaillog2dbDelivery{})
 
     //Setup Maillog Tail
     tail_handle, err := tail.TailFile(config.maillog, tail.Config{Follow: true,ReOpen: true})
     if err != nil {
         log.Fatal(err)
-    }    
+    }
 
     //compile regex
-    entry_firstpart_regex := regexp.MustCompile(entry_firstpart_regex_str)    
+    entry_firstpart_regex := regexp.MustCompile(entry_firstpart_regex_str)
     smtpd_regex1 := regexp.MustCompile(smtpd_regex1_str)
     smtp_regex1 := regexp.MustCompile(smtp_regex1_str)
     qmgr_regex1 := regexp.MustCompile(qmgr_regex1_str)
     cleanup_regex1 := regexp.MustCompile(cleanup_regex1_str)
-    
+
     //begin watching maillog and parsing entries
     for line := range tail_handle.Lines {
         if entry_firstpart_regex.MatchString(line.Text) == false {
             continue
         }
-            
+
         entry_firstpart := entry_firstpart_regex.FindAllStringSubmatch(line.Text, -1)
-        
+
         //strip common entry text from line
-        remaining := strings.Trim(strings.Replace(line.Text, entry_firstpart[0][0], "", -1), " ")        
+        remaining := strings.Trim(strings.Replace(line.Text, entry_firstpart[0][0], "", -1), " ")
 
         if config.debug {
             fmt.Println("timestamp:", entry_firstpart[0][1])
@@ -194,32 +194,32 @@ func main() {
             fmt.Println("processid:", entry_firstpart[0][4])
             fmt.Println("message:", remaining)
         }
-        
-        //add raw log entry to db if not exists        
-        recordRawLogEntry(entry_firstpart[0][1], entry_firstpart[0][2], entry_firstpart[0][3], entry_firstpart[0][4], remaining)        
-        
+
+        //add raw log entry to db if not exists
+        recordRawLogEntry(entry_firstpart[0][1], entry_firstpart[0][2], entry_firstpart[0][3], entry_firstpart[0][4], remaining)
+
         switch {
-            case smtpd_regex1.MatchString(remaining): 
+            case smtpd_regex1.MatchString(remaining):
                 matches := smtpd_regex1.FindAllStringSubmatch(remaining, -1)
-                
+
                 if config.debug {
                     fmt.Println("queueid:", matches[0][1])
                     fmt.Println("client:", matches[0][2])
                 }
-                
+
                 //split client string to rdns/ip and record entry if not exists
                 clientsplit_regex := regexp.MustCompile(`(.*?)\[(.*?)\]`)
-                csplitmatches := clientsplit_regex.FindAllStringSubmatch(matches[0][2], -1)                
-                
+                csplitmatches := clientsplit_regex.FindAllStringSubmatch(matches[0][2], -1)
+
                 //record client entry
-                recordClientEntry(csplitmatches[0][0], csplitmatches[0][1], csplitmatches[0][2], entry_firstpart[0][1])                        
-                
+                recordClientEntry(csplitmatches[0][0], csplitmatches[0][1], csplitmatches[0][2], entry_firstpart[0][1])
+
                 //record client in message entry
                 recordMessageClientEntry(matches[0][1], matches[0][2])
                 break
-            case smtp_regex1.MatchString(remaining): 
+            case smtp_regex1.MatchString(remaining):
                 matches := smtp_regex1.FindAllStringSubmatch(remaining, -1)
-                
+
                 if config.debug {
                     fmt.Println("queueid:", matches[0][1])
                     fmt.Println("to:", matches[0][2])
@@ -230,21 +230,21 @@ func main() {
                     fmt.Println("status:", matches[0][7])
                     fmt.Println("statusext:", matches[0][8])
                 }
-                
+
                 recordDeliveryEntry(
                     entry_firstpart[0][1],
-                    matches[0][1], 
-                    matches[0][2], 
-                    matches[0][3], 
-                    matches[0][4], 
-                    matches[0][5], 
-                    matches[0][6], 
-                    matches[0][7], 
+                    matches[0][1],
+                    matches[0][2],
+                    matches[0][3],
+                    matches[0][4],
+                    matches[0][5],
+                    matches[0][6],
+                    matches[0][7],
                     matches[0][8])
                 break
-            case qmgr_regex1.MatchString(remaining): 
+            case qmgr_regex1.MatchString(remaining):
                 matches := qmgr_regex1.FindAllStringSubmatch(remaining, -1)
-                
+
                 if config.debug {
                     fmt.Println("queueid:", matches[0][1])
                     fmt.Println("from:", matches[0][2])
@@ -252,27 +252,27 @@ func main() {
                     fmt.Println("nrcpt:", matches[0][4])
                     fmt.Println("statusext:", matches[0][5])
                 }
-                
+
                 recordMessageEntry(
-                    entry_firstpart[0][1], 
-                    entry_firstpart[0][2], 
-                    matches[0][1], 
-                    matches[0][2], 
-                    matches[0][3], 
-                    matches[0][4], 
+                    entry_firstpart[0][1],
+                    entry_firstpart[0][2],
+                    matches[0][1],
+                    matches[0][2],
+                    matches[0][3],
+                    matches[0][4],
                     matches[0][5])
                 break
-            case cleanup_regex1.MatchString(remaining): 
+            case cleanup_regex1.MatchString(remaining):
                 matches := cleanup_regex1.FindAllStringSubmatch(remaining, -1)
-                
+
                 if config.debug {
                     fmt.Println("queueid:", matches[0][1])
                     fmt.Println("message-id:", matches[0][2])
                 }
-                
+
                 recordMessageMessageIdEntry(matches[0][1], matches[0][2])
                 break
-            default: 
+            default:
                 if config.debug {
                     fmt.Println("entry matches no available regex", remaining)
                 }
@@ -282,13 +282,13 @@ func main() {
         if config.debug {
             fmt.Println("--------------------------------------------------")
         }
-    }    
+    }
 }
 
 /*
 * Adds a raw log entry into pfmaillog2db_logs table only if it does not yet exist
 */
-func recordRawLogEntry(TIMESTAMP string, MAILHOST string, PROCESS string, PROCESSID string, MESSAGE string) {    
+func recordRawLogEntry(TIMESTAMP string, MAILHOST string, PROCESS string, PROCESSID string, MESSAGE string) {
     var logentries []Pfmaillog2dbLog
     DBCONN.Where(`
         log_timestamp=? and
@@ -301,7 +301,7 @@ func recordRawLogEntry(TIMESTAMP string, MAILHOST string, PROCESS string, PROCES
         PROCESS,
         PROCESSID,
         MESSAGE).Find(&logentries)
-            
+
     if len(logentries) == 0 {
         DBCONN.Save(&Pfmaillog2dbLog{
             RowCreatedAt: time.Now(),
@@ -310,7 +310,7 @@ func recordRawLogEntry(TIMESTAMP string, MAILHOST string, PROCESS string, PROCES
             LogProcess: PROCESS,
             LogProcessid: PROCESSID,
             LogMessage: MESSAGE})
-    } 
+    }
 }
 
 func recordClientEntry(CLIENTSTR string, CLIENTRDNS string, CLIENTIP string, CLIENTLASTSEEN string) {
@@ -318,11 +318,11 @@ func recordClientEntry(CLIENTSTR string, CLIENTRDNS string, CLIENTIP string, CLI
     DBCONN.Where(`
         client=? and
         client_rdns=? and
-        client_addr=?`, 
-        CLIENTSTR, 
-        CLIENTRDNS, 
-        CLIENTIP).Find(&cliententries)   
-    
+        client_addr=?`,
+        CLIENTSTR,
+        CLIENTRDNS,
+        CLIENTIP).Find(&cliententries)
+
     if len(cliententries) == 0 {
         DBCONN.Save(&Pfmaillog2dbClient{
             RowCreatedAt: time.Now(),
@@ -342,7 +342,7 @@ func recordMessageEntry(TIMESTAMP string, MAILHOST string, QUEUEID string, FROM 
     DBCONN.Where(`
         message_queueid=?
     `, QUEUEID).Find(&messageentries)
-    
+
     if len(messageentries) == 0 {
         DBCONN.Save(&Pfmaillog2dbMessage{
             RowCreatedAt: time.Now(),
@@ -353,7 +353,7 @@ func recordMessageEntry(TIMESTAMP string, MAILHOST string, QUEUEID string, FROM 
             MessageSize: SIZE,
             MessageNrcpt: NRCPT,
             MessageStatusext:STATUSEXT})
-    } else {        
+    } else {
         messageentries[0].RowUpdatedAt = time.Now()
         messageentries[0].MessageTimestamp = pfdate2golang(TIMESTAMP)
         messageentries[0].MessageMailhost = MAILHOST
@@ -370,7 +370,7 @@ func recordMessageClientEntry(QUEUEID string, CLIENTSTR string) {
     DBCONN.Where(`
         message_queueid=?
     `, QUEUEID).Find(&messageentries)
-    
+
     if len(messageentries) == 0 {
         DBCONN.Save(&Pfmaillog2dbMessage{
             RowCreatedAt: time.Now(),
@@ -388,7 +388,7 @@ func recordMessageMessageIdEntry(QUEUEID string, MESSAGEID string) {
     DBCONN.Where(`
         message_queueid=?
     `, QUEUEID).Find(&messageentries)
-    
+
     if len(messageentries) == 0 {
         DBCONN.Save(&Pfmaillog2dbMessage{
             MessageQueueid: QUEUEID,
@@ -421,7 +421,7 @@ func recordDeliveryEntry(TIMESTAMP string, QUEUEID string, TO string, RELAY stri
         DSN,
         STATUS,
         STATUSEXT).Find(&deliveryentries)
-        
+
     if len(deliveryentries) == 0 {
         DBCONN.Save(&Pfmaillog2dbDelivery{
             RowCreatedAt: time.Now(),
@@ -450,13 +450,13 @@ func recordDeliveryEntry(TIMESTAMP string, QUEUEID string, TO string, RELAY stri
 }
 
 func pfdate2golang(POSTFIXDATE string) time.Time {
-    value := fmt.Sprintf("%v %v", time.Now().Year(), POSTFIXDATE)    
+    value := fmt.Sprintf("%v %v", time.Now().Year(), POSTFIXDATE)
     rtime, err := time.Parse("2006 Jan 2 15:04:05", value)
     if err != nil {
-        log.Fatal("Error Parsing Time Format: ", value) 
+        log.Fatal("Error Parsing Time Format: ", value)
     } else {
         return rtime
-    }   
-    
+    }
+
     return time.Now()
 }
