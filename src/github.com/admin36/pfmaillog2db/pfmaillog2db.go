@@ -1,16 +1,16 @@
 package main
 
 import(
-	"fmt"
+    "fmt"
     "time"
-	"log"
-	"os"
-	"flag"
-	"regexp"
-	"strings"
-	//"database/sql"
-	"github.com/ActiveState/tail"
-	_ "github.com/go-sql-driver/mysql"
+    "log"
+    "os"
+    "flag"
+    "regexp"
+    "strings"
+    //"database/sql"
+    "github.com/ActiveState/tail"
+    _ "github.com/go-sql-driver/mysql"
     "github.com/jinzhu/gorm"
 )
 
@@ -18,13 +18,13 @@ import(
 * Holds configuration flags passed from cli
 */
 type Config struct {
-	maillog string
-	logfile string
-	dbhost string
-	dbport int
-	dbuser string
-	dbpass string
-	dbname string
+    maillog string
+    logfile string
+    dbhost string
+    dbport int
+    dbuser string
+    dbpass string
+    dbname string
     debug bool
 }
 
@@ -32,20 +32,20 @@ type Config struct {
 * Holds our regex constants
 */
 const (
-	//this regex matches the timestamp, host, process and pid from the line entry
-	entry_firstpart_regex_str string = `([a-zA-Z]{1,3}\s[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2})\s([\S]+)\s([\S]+)\[([0-9]{1,})\]:`
+    //this regex matches the timestamp, host, process and pid from the line entry
+    entry_firstpart_regex_str string = `([a-zA-Z]{1,3}\s[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2})\s([\S]+)\s([\S]+)\[([0-9]{1,})\]:`
 
-	//this regex matches the smtpd client log entry
-	smtpd_regex1_str string = `([a-zA-Z0-9]{11}):\sclient=(.*)`
+    //this regex matches the smtpd client log entry
+    smtpd_regex1_str string = `([a-zA-Z0-9]{11}):\sclient=(.*)`
 
-	//this regex matches the smtp log entry
-	smtp_regex1_str string = `([a-zA-Z0-9]{11}):\sto=(.*?),\srelay=(.*?),\sdelay=([0-9]{1,}),\sdelays=(.*?),\sdsn=(.*?),\sstatus=(.*?)\s(.*)`
+    //this regex matches the smtp log entry
+    smtp_regex1_str string = `([a-zA-Z0-9]{11}):\sto=(.*?),\srelay=(.*?),\sdelay=([0-9]{1,}),\sdelays=(.*?),\sdsn=(.*?),\sstatus=(.*?)\s(.*)`
 
-	//this regex matches the qmgr log entry
-	qmgr_regex1_str string = `([a-zA-Z0-9]{11}):\sfrom=(.*?),\ssize=([0-9]{1,}),\snrcpt=([0-9]{1,})\s(.*)`
+    //this regex matches the qmgr log entry
+    qmgr_regex1_str string = `([a-zA-Z0-9]{11}):\sfrom=(.*?),\ssize=([0-9]{1,}),\snrcpt=([0-9]{1,})\s(.*)`
 
-	//this regex matches the cleanup message-id log entry
-	cleanup_regex1_str string = `([a-zA-Z0-9]{11}):\smessage-id=(.*)`
+    //this regex matches the cleanup message-id log entry
+    cleanup_regex1_str string = `([a-zA-Z0-9]{11}):\smessage-id=(.*)`
 )
 
 /*
@@ -109,83 +109,83 @@ var ERROR error
 * Main Method
 */
 func main() {    
-	cwd, _ := os.Getwd()
+    cwd, _ := os.Getwd()
 
-	//Setup Command Line Flags
-	flag_maillog := flag.String("maillog", "/var/log/maillog", "Path To Maillog. Default: /var/log/maillog")
-	flag_logfile := flag.String("logfile", fmt.Sprintf("%v/pfmaillog2db.log", cwd), "Path To Program Logfile")
+    //Setup Command Line Flags
+    flag_maillog := flag.String("maillog", "/var/log/maillog", "Path To Maillog. Default: /var/log/maillog")
+    flag_logfile := flag.String("logfile", fmt.Sprintf("%v/pfmaillog2db.log", cwd), "Path To Program Logfile")
     flag_dbhost := flag.String("dbhost", "localhost", "Database Host")
-	flag_dbport := flag.Int("dbport", 3306, "Database Port")
-	flag_dbuser := flag.String("dbuser", "username", "Database Username")
-	flag_dbpass := flag.String("dbpass", "password", "Database Password")
-	flag_dbname := flag.String("dbname", "databasename", "Database Name")	
-    flag_debug := flag.Bool("debug", false, "Debug Output. Default: false")	
-	flag.Parse()
+    flag_dbport := flag.Int("dbport", 3306, "Database Port")
+    flag_dbuser := flag.String("dbuser", "username", "Database Username")
+    flag_dbpass := flag.String("dbpass", "password", "Database Password")
+    flag_dbname := flag.String("dbname", "databasename", "Database Name")    
+    flag_debug := flag.Bool("debug", false, "Debug Output. Default: false")    
+    flag.Parse()
 
-	//Setup Config
-	config := Config{*flag_maillog, *flag_logfile, *flag_dbhost, *flag_dbport, *flag_dbuser, *flag_dbpass, *flag_dbname, *flag_debug}		
-	
-	//Setup Program Log
-	logfile, err := os.OpenFile(config.logfile, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
-	if err !=nil {
-		log.Fatal(err)
-	} else {
-		log.SetOutput(logfile)
+    //Setup Config
+    config := Config{*flag_maillog, *flag_logfile, *flag_dbhost, *flag_dbport, *flag_dbuser, *flag_dbpass, *flag_dbname, *flag_debug}        
+    
+    //Setup Program Log
+    logfile, err := os.OpenFile(config.logfile, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+    if err !=nil {
+        log.Fatal(err)
+    } else {
+        log.SetOutput(logfile)
         if config.debug {
             log.Println(fmt.Sprintf("Logging To %v", config.logfile))
         }
-	}
-	defer logfile.Close()
+    }
+    defer logfile.Close()
 
-	//Setup DB    
+    //Setup DB    
     dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?parseTime=True", config.dbuser, config.dbpass, config.dbhost, config.dbport, config.dbname)
-    DBCONN, ERROR = gorm.Open("mysql", dsn)		
-	if ERROR != nil {
-		log.Fatal(ERROR)
-	}
+    DBCONN, ERROR = gorm.Open("mysql", dsn)        
+    if ERROR != nil {
+        log.Fatal(ERROR)
+    }
     DBCONN.DB().SetMaxIdleConns(50)
     DBCONN.DB().SetMaxOpenConns(200)
 
-	//Ensure DB is reachable
-	log.Println("Attempting Database Connection")
-	ERROR = DBCONN.DB().Ping()
-	if ERROR != nil {
-		log.Fatal(ERROR)
-	} else {
+    //Ensure DB is reachable
+    log.Println("Attempting Database Connection")
+    ERROR = DBCONN.DB().Ping()
+    if ERROR != nil {
+        log.Fatal(ERROR)
+    } else {
         if config.debug {
             log.Println("Database Connection Successful")
         }
     }
-	
-	//ensure db tables exist:
+    
+    //ensure db tables exist:
     DBCONN.AutoMigrate(Pfmaillog2dbLog{})
     DBCONN.AutoMigrate(Pfmaillog2dbClient{})
     DBCONN.AutoMigrate(Pfmaillog2dbMessage{})    
     DBCONN.AutoMigrate(Pfmaillog2dbDelivery{})
 
-	//Setup Maillog Tail
-	tail_handle, err := tail.TailFile(config.maillog, tail.Config{Follow: true,ReOpen: true})
-	if err != nil {
-		log.Fatal(err)
-	}	
+    //Setup Maillog Tail
+    tail_handle, err := tail.TailFile(config.maillog, tail.Config{Follow: true,ReOpen: true})
+    if err != nil {
+        log.Fatal(err)
+    }    
 
     //compile regex
-	entry_firstpart_regex := regexp.MustCompile(entry_firstpart_regex_str)	
-	smtpd_regex1 := regexp.MustCompile(smtpd_regex1_str)
-	smtp_regex1 := regexp.MustCompile(smtp_regex1_str)
-	qmgr_regex1 := regexp.MustCompile(qmgr_regex1_str)
-	cleanup_regex1 := regexp.MustCompile(cleanup_regex1_str)
-	
-	//begin watching maillog and parsing entries
-	for line := range tail_handle.Lines {
-		if entry_firstpart_regex.MatchString(line.Text) == false {
-			continue
-		}
-    		
-		entry_firstpart := entry_firstpart_regex.FindAllStringSubmatch(line.Text, -1)
-		
-		//strip common entry text from line
-		remaining := strings.Trim(strings.Replace(line.Text, entry_firstpart[0][0], "", -1), " ")		
+    entry_firstpart_regex := regexp.MustCompile(entry_firstpart_regex_str)    
+    smtpd_regex1 := regexp.MustCompile(smtpd_regex1_str)
+    smtp_regex1 := regexp.MustCompile(smtp_regex1_str)
+    qmgr_regex1 := regexp.MustCompile(qmgr_regex1_str)
+    cleanup_regex1 := regexp.MustCompile(cleanup_regex1_str)
+    
+    //begin watching maillog and parsing entries
+    for line := range tail_handle.Lines {
+        if entry_firstpart_regex.MatchString(line.Text) == false {
+            continue
+        }
+            
+        entry_firstpart := entry_firstpart_regex.FindAllStringSubmatch(line.Text, -1)
+        
+        //strip common entry text from line
+        remaining := strings.Trim(strings.Replace(line.Text, entry_firstpart[0][0], "", -1), " ")        
 
         if config.debug {
             fmt.Println("timestamp:", entry_firstpart[0][1])
@@ -196,11 +196,11 @@ func main() {
         }
         
         //add raw log entry to db if not exists        
-        recordRawLogEntry(entry_firstpart[0][1], entry_firstpart[0][2], entry_firstpart[0][3], entry_firstpart[0][4], remaining)		
-		
-		switch {
-			case smtpd_regex1.MatchString(remaining): 
-				matches := smtpd_regex1.FindAllStringSubmatch(remaining, -1)
+        recordRawLogEntry(entry_firstpart[0][1], entry_firstpart[0][2], entry_firstpart[0][3], entry_firstpart[0][4], remaining)        
+        
+        switch {
+            case smtpd_regex1.MatchString(remaining): 
+                matches := smtpd_regex1.FindAllStringSubmatch(remaining, -1)
                 
                 if config.debug {
                     fmt.Println("queueid:", matches[0][1])
@@ -216,10 +216,10 @@ func main() {
                 
                 //record client in message entry
                 recordMessageClientEntry(matches[0][1], matches[0][2])
-				break
-			case smtp_regex1.MatchString(remaining): 
-				matches := smtp_regex1.FindAllStringSubmatch(remaining, -1)
-				
+                break
+            case smtp_regex1.MatchString(remaining): 
+                matches := smtp_regex1.FindAllStringSubmatch(remaining, -1)
+                
                 if config.debug {
                     fmt.Println("queueid:", matches[0][1])
                     fmt.Println("to:", matches[0][2])
@@ -241,10 +241,10 @@ func main() {
                     matches[0][6], 
                     matches[0][7], 
                     matches[0][8])
-				break
-			case qmgr_regex1.MatchString(remaining): 
-				matches := qmgr_regex1.FindAllStringSubmatch(remaining, -1)
-				
+                break
+            case qmgr_regex1.MatchString(remaining): 
+                matches := qmgr_regex1.FindAllStringSubmatch(remaining, -1)
+                
                 if config.debug {
                     fmt.Println("queueid:", matches[0][1])
                     fmt.Println("from:", matches[0][2])
@@ -261,35 +261,35 @@ func main() {
                     matches[0][3], 
                     matches[0][4], 
                     matches[0][5])
-				break
-			case cleanup_regex1.MatchString(remaining): 
-				matches := cleanup_regex1.FindAllStringSubmatch(remaining, -1)
-				
+                break
+            case cleanup_regex1.MatchString(remaining): 
+                matches := cleanup_regex1.FindAllStringSubmatch(remaining, -1)
+                
                 if config.debug {
                     fmt.Println("queueid:", matches[0][1])
                     fmt.Println("message-id:", matches[0][2])
                 }
                 
                 recordMessageMessageIdEntry(matches[0][1], matches[0][2])
-				break
-			default: 
+                break
+            default: 
                 if config.debug {
                     fmt.Println("entry matches no available regex", remaining)
                 }
                 break
-		}
+        }
 
-		if config.debug {
+        if config.debug {
             fmt.Println("--------------------------------------------------")
         }
-	}	
+    }    
 }
 
 /*
 * Adds a raw log entry into pfmaillog2db_logs table only if it does not yet exist
 */
 func recordRawLogEntry(TIMESTAMP string, MAILHOST string, PROCESS string, PROCESSID string, MESSAGE string) {    
-	var logentries []Pfmaillog2dbLog
+    var logentries []Pfmaillog2dbLog
     DBCONN.Where(`
         log_timestamp=? and
         log_mailhost=? and
