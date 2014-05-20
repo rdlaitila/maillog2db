@@ -25,10 +25,18 @@ If you are going to compile from source, the following dependencies exist:
 
 Please review the source imports from https://github.com/admin36/pfmaillog2db/blob/master/src/github.com/admin36/pfmaillog2db/pfmaillog2db.go for more details
 
-# Usage
+# Example Usage
 
-Once you have the binary available either pre-compiled or source-compiled, usage is as follows:
+Once you have the binary available either pre-compiled or source-compiled, usage is as follows (assuming installed under /opt/pfmaillog2db):
 
+```bash
+/opt/pfmaillog2db/pfmaillog2db -dbhost 10.10.0.1 -dbport 3306 -dbname pfmaillog2db -dbuser pfmaillog2db -dbpass MySecretPassword -maillog /var/log/maillog
+```
 
+Once the binary is started, it will parse any existing entries and watch for any new ones. 
+
+# Database Schema
+
+The database schema is automatically created by the program upon startup. ensure your database user has **CREATE TABLE** permissions on the database. 
 
 
