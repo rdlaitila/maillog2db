@@ -25,6 +25,8 @@ If you are going to compile from source, the following dependencies exist:
 
 Please review the source imports from https://github.com/admin36/pfmaillog2db/blob/master/src/github.com/admin36/pfmaillog2db/pfmaillog2db.go for more details
 
+Pfmaillog2db also requires a mysql database. No other databases are supported at this time. 
+
 # Example Usage
 
 Once you have the binary available either pre-compiled or source-compiled, usage is as follows (assuming installed under /opt/pfmaillog2db):
@@ -35,8 +37,22 @@ Once you have the binary available either pre-compiled or source-compiled, usage
 
 Once the binary is started, it will parse any existing entries and watch for any new ones. 
 
+for a full list of CLI options, use the following:
+
+```
+/opt/pfmaillog2db/pfmaillog2db -h
+```
+
 # Database Schema
 
 The database schema is automatically created by the program upon startup. ensure your database user has **CREATE TABLE** permissions on the database. 
+
+# Logging
+
+The program log file by default is placed next to the binary location (ex: /opt/pfmaillog2db/pfmaillog2db > /opt/pfmaillog2db/pfmaillog2db.log). If you would like to change the logging location, simply supply the -logfile CLI switch:
+
+```
+/opt/pfmaillog2db/pfmaillog2db -logfile /var/log/pfmaillog2db.log
+```
 
 
