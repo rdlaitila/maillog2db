@@ -55,4 +55,10 @@ The program log file by default is placed next to the binary location (ex: /opt/
 /opt/pfmaillog2db/pfmaillog2db -logfile /var/log/pfmaillog2db.log
 ```
 
+# Performance and safety
+
+No guarantees are being made on performance of this program. It is currently being tested within a production environment to gauge real-world usage and statistics will be released once they become available.
+
+The program was coded with basic safety in mind. No interference with a running postfix installation have been observed. Please feel encouraged to open a Github issue regarding any performance observations or program crashes.
+
 
