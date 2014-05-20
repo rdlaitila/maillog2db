@@ -55,7 +55,7 @@ const (
     smtpd_regex1_str string = `([a-zA-Z0-9]{11}):\sclient=(.*)`
 
     //this regex matches the smtp log entry
-    smtp_regex1_str string = `([a-zA-Z0-9]{11}):\sto=(.*?),\srelay=(.*?),\sdelay=([0-9]{1,}),\sdelays=(.*?),\sdsn=(.*?),\sstatus=(.*?)\s(.*)`
+    smtp_regex1_str string = `([a-zA-Z0-9]{11}|NOQUEUE):\sto=(.*?),\srelay=(.*?),\sdelay=(.*?),\sdelays=(.*?),\sdsn=(.*?),\sstatus=(.*?)\s(.*)`
 
     //this regex matches the qmgr log entry
     qmgr_regex1_str string = `([a-zA-Z0-9]{11}):\sfrom=(.*?),\ssize=([0-9]{1,}),\snrcpt=([0-9]{1,})\s(.*)`
