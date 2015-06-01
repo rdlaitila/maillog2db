@@ -174,10 +174,10 @@ func main() {
     }
 
     //ensure db tables exist:
-    DBCONN.AutoMigrate(Pfmaillog2dbLog{})
-    DBCONN.AutoMigrate(Pfmaillog2dbClient{})
-    DBCONN.AutoMigrate(Pfmaillog2dbMessage{})
-    DBCONN.AutoMigrate(Pfmaillog2dbDelivery{})
+    DBCONN.AutoMigrate(&Pfmaillog2dbLog{})
+    DBCONN.AutoMigrate(&Pfmaillog2dbClient{})
+    DBCONN.AutoMigrate(&Pfmaillog2dbMessage{})
+    DBCONN.AutoMigrate(&Pfmaillog2dbDelivery{})
 
     //Setup Maillog Tail
     tail_handle, err := tail.TailFile(config.maillog, tail.Config{Follow: true,ReOpen: true})
