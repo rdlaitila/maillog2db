@@ -52,16 +52,16 @@ const (
     entry_firstpart_regex_str string = `([a-zA-Z]{1,3}\s[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2})\s([\S]+)\s([\S]+)\[([0-9]{1,})\]:`
 
     //this regex matches the smtpd client log entry
-    smtpd_regex1_str string = `([a-zA-Z0-9]{11}):\sclient=(.*)`
+    smtpd_regex1_str string = `([a-zA-Z0-9]+):\sclient=(.*)`
 
     //this regex matches the smtp log entry
-    smtp_regex1_str string = `([a-zA-Z0-9]{11}|NOQUEUE):\sto=(.*?),\srelay=(.*?),\sdelay=(.*?),\sdelays=(.*?),\sdsn=(.*?),\sstatus=(.*?)\s(.*)`
+    smtp_regex1_str string = `([a-zA-Z0-9]+|NOQUEUE):\sto=(.*?),\srelay=(.*?),\sdelay=(.*?),\sdelays=(.*?),\sdsn=(.*?),\sstatus=(.*?)\s(.*)`
 
     //this regex matches the qmgr log entry
-    qmgr_regex1_str string = `([a-zA-Z0-9]{11}):\sfrom=(.*?),\ssize=([0-9]{1,}),\snrcpt=([0-9]{1,})\s(.*)`
+    qmgr_regex1_str string = `([a-zA-Z0-9]+):\sfrom=(.*?),\ssize=([0-9]{1,}),\snrcpt=([0-9]{1,})\s(.*)`
 
     //this regex matches the cleanup message-id log entry
-    cleanup_regex1_str string = `([a-zA-Z0-9]{11}):\smessage-id=(.*)`
+    cleanup_regex1_str string = `([a-zA-Z0-9]+):\smessage-id=(.*)`
 )
 
 /*
@@ -90,7 +90,7 @@ type Pfmaillog2dbMessage struct {
     Id int64
     MessageTimestamp time.Time
     MessageMailhost string `sql:"type:varchar(255);"`
-    MessageQueueid string `sql:"type:varchar(11);"`
+    MessageQueueid string `sql:"type:varchar(16);"`
     MessageFrom string `sql:"type:varchar(100);"`
     MessageSize string `sql:"type:varchar(50);"`
     MessageNrcpt string `sql:"type:varchar(50);"`
@@ -103,7 +103,7 @@ type Pfmaillog2dbMessage struct {
 type Pfmaillog2dbDelivery struct {
     Id int64
     DeliveryTimestamp time.Time
-    DeliveryQueueid string `sql:"type:varchar(11);"`
+    DeliveryQueueid string `sql:"type:varchar(16);"`
     DeliveryTo string `sql:"type:varchar(100);"`
     DeliveryRelay string `sql:"type:varchar(100);"`
     DeliveryDelay string `sql:"type:varchar(50);"`
