@@ -1,3 +1,5 @@
+NO LONGER MAINTAINED. PLEASE FEEL FREE TO FORK THIS PROJECT.
+
 pfmaillog2db
 ============
 
