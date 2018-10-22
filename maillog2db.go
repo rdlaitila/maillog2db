@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	//"database/sql"
+
 	"github.com/ActiveState/tail"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
