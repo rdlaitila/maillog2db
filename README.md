@@ -45,3 +45,13 @@ The program log file by default is placed next to the binary location (ex: /opt/
 /opt/maillog2db/maillog2db -logfile /var/log/maillog2db.log
 ```
 
+# Build and run with docker
+
+To run program as a daemon you can use docker. To build docker image:
+```
+docker build -t maillog2db .
+```
+Run docker image:
+```
+docker run -d --restart always -v /var/log/maillog:/var/log/maillog maillog2db -dbhost <dbhost> -dbname <dbname> -dbpass <dbpassword> -dbuser <dbuser> -maillog /var/log/maillog -logfile /dev/stdout 
+```
